@@ -6,4 +6,4 @@
 
 ## Contributing
 
-This repository is a read-only mirror of our internal repository. Issues are welcome here; pull requests are reviewed here and cherry-picked internally, and the commit then appears on this mirror.
+Issues and pull requests are welcome.
