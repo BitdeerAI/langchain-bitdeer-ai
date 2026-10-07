@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langchain-bitdeer-ai"
+description = "An integration package connecting Bitdeer AI and LangChain"
+license = { text = "MIT" }
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+version = "0.1.0"
+requires-python = ">=3.10.0,<4.0.0"
+dependencies = [
+    "langchain-core>=1.6.7,<2.0.0",
+    "langchain-openai>=1.6.7,<2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/BitdeerAI/langchain-bitdeer-ai"
+Repository = "https://github.com/BitdeerAI/langchain-bitdeer-ai"
+Issues = "https://github.com/BitdeerAI/langchain-bitdeer-ai/issues"
+Changelog = "https://github.com/BitdeerAI/langchain-bitdeer-ai/releases"
+
+[dependency-groups]
+test = [
+    "pytest>=9.1.1,<10.0.0",
+    "pytest-asyncio>=1.4.0,<2.0.0",
+    "pytest-socket>=0.8.1,<1.0.0",
+    "pytest-watcher>=0.6.3,<1.0.0",
+    "pytest-timeout>=2.4.0,<3.0.0",
+    "pytest-xdist>=3.8.0,<4.0.0",
+    "langchain-tests>=1.1.9,<2.0.0",
+]
+test_integration = []
+lint = ["ruff>=0.16.10,<0.17.0"]
+typing = ["mypy>=2.4.0,<2.5.0"]
+
+[tool.mypy]
+disallow_untyped_defs = true
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 100
+
+[tool.ruff.lint]
+select = [ "ALL" ]
+ignore = [
+    "COM812",  # Conflicts with formatter
+    "PLR0913", # Too many arguments
+    "CPY",     # The LICENSE file covers copyright; no per-file headers
+    "ANN401",
+    "TC002",
+    "TC003",
+]
+unfixable = ["B028"] # People should intentionally tune the stacklevel
+
+[tool.coverage.run]
+omit = ["tests/*"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --durations=5"
+markers = [
+    "compile: mark placeholder test used to compile integration tests without running them",
+]
+asyncio_mode = "auto"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+ignore-var-parameters = true  # ignore missing documentation for *args and **kwargs parameters
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**/*.py" = [
+    "D104",   # Test packages are empty
+    "S101",   # Tests need assertions
+    "S311",   # Standard pseudo-random generators are not suitable for cryptographic purposes
+    "SLF001", # Private member access
+    "ARG002", # Unused method argument
+]
+"scripts/*.py" = [
+    "INP001",   # Not a package
+]
