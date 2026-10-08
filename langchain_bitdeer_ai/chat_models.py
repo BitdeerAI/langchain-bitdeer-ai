@@ -415,8 +415,8 @@ class ChatBitdeerAI(BaseChatOpenAI):
             and message.tool_call_chunks
         ):
             # In v1 streaming, langchain-core numbers blocks that have no index,
-            # but tool-call blocks keep the API's tool-call index. A reasoning
-            # block and a tool call can then share index 0 and get merged into
+            # but tool-call blocks keep the API's tool-call index. A text or
+            # reasoning block and a tool call can then share index 0 and get merged into
             # one block. Give tool calls their own index space, as upstream does
             # for the Responses API.
             blocks = message.content_blocks
