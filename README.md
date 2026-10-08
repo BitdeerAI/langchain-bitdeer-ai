@@ -21,7 +21,8 @@ This guide gives a quick overview of getting started with Bitdeer AI
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
 
-Image input works with models that accept images.
+Image input depends on the model. The [Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog)
+lists which models accept images.
 
 ## Setup
 
@@ -66,7 +67,8 @@ uv add langchain-bitdeer-ai
 
 ## Instantiation
 
-The `model` argument is required. Pass any chat model ID from the Bitdeer AI model catalog:
+The `model` argument is required. Pass any chat model ID from the
+[Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog):
 
 ```python
 from langchain_bitdeer_ai import ChatBitdeerAI
