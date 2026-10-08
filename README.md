@@ -74,17 +74,6 @@ model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", reasoning_effort="low")
 `output_token_details.reasoning`. Token usage is also reported when streaming. Pass `stream_usage=False`
 to turn it off.
 
-### Why not `ChatOpenAI(base_url=...)`?
-
-Bitdeer AI's API is OpenAI-compatible, so `ChatOpenAI` can reach it. `ChatBitdeerAI` builds on the same
-`langchain-openai` code, and adds:
-
-- **Reasoning output.** `ChatOpenAI` drops the `reasoning_content` field that Bitdeer AI models return.
-- **Complete token usage.** Reasoning tokens are reported, and streamed responses include usage by default.
-- **Separate credentials.** It reads only `BITDEER_API_KEY` and `BITDEER_API_BASE`. It never sends your
-  `OPENAI_API_KEY` to Bitdeer AI, and `OPENAI_BASE_URL` can't redirect it.
-- **Correct tracing.** Runs show up in LangSmith under the `bitdeer_ai` provider instead of `openai`.
-
 ### Known issues
 
 - With `DeepSeek-V4.1-Flash`, forcing a tool call (as `with_structured_output` does by default) can return
@@ -114,6 +103,10 @@ Bitdeer AI's API is OpenAI-compatible, so `ChatOpenAI` can reach it. `ChatBitdee
 | ---------- | -------------------- | -------------------------------------- |
 | `api_key`  | `BITDEER_API_KEY`    | none (required)                        |
 | `base_url` | `BITDEER_API_BASE`   | `https://api-inference.bitdeer.ai/v1`  |
+
+`ChatBitdeerAI` reads only these variables. It never falls back to `OPENAI_API_KEY` or `OPENAI_BASE_URL`,
+so an OpenAI key in your environment is never sent to Bitdeer AI. Runs show up in LangSmith under the
+`bitdeer_ai` provider.
 
 Other arguments such as `temperature`, `max_tokens`, `timeout` and `max_retries` work as they do in
 `langchain-openai`.
