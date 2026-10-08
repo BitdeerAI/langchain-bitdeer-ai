@@ -60,6 +60,14 @@ for block in response.content_blocks:
 When you stream, each chunk carries its part of the reasoning, and adding the chunks together gives the
 full text.
 
+`ChatBitdeerAI` uses the Chat Completions API. Parameters that only OpenAI's Responses API accepts, such as
+`reasoning`, `include` and `truncation`, raise a `ValueError`. The Chat Completions parameter that
+corresponds to `reasoning={"effort": ...}` is `reasoning_effort`:
+
+```python
+model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", reasoning_effort="low")
+```
+
 ### Token usage
 
 `response.usage_metadata` reports input, output and total tokens, and reasoning tokens under
@@ -83,7 +91,17 @@ Bitdeer AI's API is OpenAI-compatible, so `ChatOpenAI` can reach it. `ChatBitdee
   the tool call as plain text. Use `method="json_schema"` for structured output with this model:
 
   ```python
-  structured_model = model.with_structured_output(MySchema, method="json_schema")
+  from pydantic import BaseModel
+
+
+  class Person(BaseModel):
+      name: str
+      age: int
+
+
+  model = ChatBitdeerAI(model="deepseek-ai/DeepSeek-V4.1-Flash")
+  structured_model = model.with_structured_output(Person, method="json_schema")
+  structured_model.invoke("Ada is 36 years old.")
   ```
 
 ## Configuration
