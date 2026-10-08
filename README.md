@@ -104,6 +104,10 @@ Bitdeer AI's API is OpenAI-compatible, so `ChatOpenAI` can reach it. `ChatBitdee
   structured_model.invoke("Ada is 36 years old.")
   ```
 
+- Structured output with `method="json_schema"` and JSON mode can print a Pydantic serializer warning
+  about a `metadata` field (`PydanticSerializationUnexpectedValue`). The API returns `metadata` in a shape
+  the `openai` SDK doesn't expect. The warning is harmless, and the output is correct.
+
 ## Configuration
 
 | Argument   | Environment variable | Default                                |
