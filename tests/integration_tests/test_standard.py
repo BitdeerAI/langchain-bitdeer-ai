@@ -1,8 +1,9 @@
 """Standard LangChain interface tests."""
 
-from typing import Literal
+from typing import Literal, cast
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, AIMessageChunk
 from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_tests.integration_tests import ChatModelIntegrationTests
 
@@ -52,6 +53,16 @@ class TestChatBitdeerAIStandard(ChatModelIntegrationTests):
         return True
 
     @property
+    def supports_image_urls(self) -> bool:
+        """Bitdeer AI accepts image URLs."""
+        return True
+
+    @property
+    def supports_json_mode(self) -> bool:
+        """Bitdeer AI supports `response_format={"type": "json_object"}`."""
+        return True
+
+    @property
     def supports_pdf_inputs(self) -> bool:
         """Bitdeer AI does not accept PDF inputs."""
         return False
@@ -83,3 +94,14 @@ class TestChatBitdeerAIStandard(ChatModelIntegrationTests):
     ]:
         """Bitdeer AI reports reasoning tokens."""
         return {"invoke": ["reasoning_output"], "stream": ["reasoning_output"]}
+
+    def invoke_with_reasoning_output(self, *, stream: bool = False) -> AIMessage:
+        """Invoke with a prompt that makes the model reason."""
+        model = ChatBitdeerAI(**self.chat_model_params)
+        prompt = "Is 391 a prime number? Answer yes or no."
+        if not stream:
+            return cast("AIMessage", model.invoke(prompt))
+        full: AIMessageChunk | None = None
+        for chunk in model.stream(prompt):
+            full = chunk if full is None else full + chunk
+        return cast("AIMessage", full)
