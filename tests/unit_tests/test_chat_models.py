@@ -266,11 +266,7 @@ def _model_with_transport(
 
 
 def test_always_uses_chat_completions() -> None:
-    """Settings that route OpenAI to the Responses API still use Chat Completions."""
-    assert not ChatBitdeerAI(
-        model=MODEL_NAME, api_key=SecretStr("test"), reasoning={"effort": "low"}
-    )._use_responses_api({})
-
+    """`use_responses_api=True` still sends requests to Chat Completions."""
     requests: list[httpx.Request] = []
     llm = _model_with_transport(requests, use_responses_api=True)
     llm.invoke("hi")
@@ -279,6 +275,46 @@ def test_always_uses_chat_completions() -> None:
         "/v1/chat/completions",
         "/v1/chat/completions",
     ]
+
+
+REASONING = {"reasoning": {"effort": "low"}}
+
+
+@pytest.mark.parametrize(
+    ("init_kwargs", "call_kwargs"),
+    [(REASONING, {}), ({}, REASONING)],
+    ids=["at_init", "at_call"],
+)
+def test_reasoning_param_is_rejected(init_kwargs: dict, call_kwargs: dict) -> None:
+    """`reasoning=` raises a clear error for invoke and stream, and sends nothing."""
+    requests: list[httpx.Request] = []
+    llm = _model_with_transport(requests, **init_kwargs)
+    with pytest.raises(ValueError, match=r"`reasoning`.*`reasoning_effort`"):
+        llm.invoke("hi", **call_kwargs)
+    with pytest.raises(ValueError, match=r"`reasoning`.*`reasoning_effort`"):
+        list(llm.stream("hi", **call_kwargs))
+    assert requests == []
+
+
+@pytest.mark.parametrize(
+    ("param", "value"),
+    [("include", ["reasoning.encrypted_content"]), ("truncation", "auto")],
+)
+def test_responses_only_params_are_rejected(param: str, value: Any) -> None:
+    """Other Responses-only parameters raise an error that names them."""
+    requests: list[httpx.Request] = []
+    llm = _model_with_transport(requests, **{param: value})
+    with pytest.raises(ValueError, match=f"`{param}`"):
+        llm.invoke("hi")
+    assert requests == []
+
+
+def test_reasoning_effort_is_sent() -> None:
+    """`reasoning_effort` is the Chat Completions parameter and reaches the API."""
+    requests: list[httpx.Request] = []
+    _model_with_transport(requests, reasoning_effort="low").invoke("hi")
+    assert requests[0].url.path == "/v1/chat/completions"
+    assert json.loads(requests[0].content)["reasoning_effort"] == "low"
 
 
 def test_create_chat_result_reasoning() -> None:

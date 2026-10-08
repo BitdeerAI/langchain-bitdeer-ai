@@ -11,6 +11,9 @@ from langchain_core.messages.ai import OutputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_core.utils import from_env, secret_from_env
 from langchain_openai.chat_models.base import BaseChatOpenAI
+from langchain_openai.chat_models.base import (
+    _use_responses_api as _requires_responses_api,
+)
 from pydantic import ConfigDict, Field, SecretStr, model_validator
 from typing_extensions import Self
 
@@ -19,6 +22,18 @@ from langchain_bitdeer_ai._version import __version__
 DEFAULT_API_BASE = "https://api-inference.bitdeer.ai/v1"
 
 _PROVIDER = "bitdeer_ai"
+
+# Named in the error message. Whether a request needs the Responses API is decided
+# by `langchain-openai`'s own rule (`_requires_responses_api`), which also covers
+# OpenAI built-in tools.
+_RESPONSES_ONLY_PARAMS = {
+    "context_management",
+    "include",
+    "previous_response_id",
+    "reasoning",
+    "text",
+    "truncation",
+}
 
 
 def _get(obj: Any, key: str) -> Any:
@@ -334,10 +349,23 @@ class ChatBitdeerAI(BaseChatOpenAI):
         # up in OpenAI's profiles.
         return None
 
-    def _use_responses_api(self, payload: dict) -> bool:  # noqa: ARG002
+    def _use_responses_api(self, payload: dict) -> bool:
         # Always use Chat Completions. The base class would send some calls to the
         # Responses API (for example when `reasoning` is set) but only for
-        # `invoke`, not `stream`.
+        # `invoke`, not `stream`. Parameters that only the Responses API accepts
+        # would make the `openai` client fail with an unclear `TypeError`, so
+        # reject them here, using upstream's own rule for what they are.
+        if _requires_responses_api(payload):
+            names = [
+                f"`{name}`" for name in sorted(_RESPONSES_ONLY_PARAMS & payload.keys())
+            ]
+            msg = (
+                "ChatBitdeerAI uses the Chat Completions API, which doesn't accept "
+                f"{', '.join(names) or 'OpenAI built-in tools'}."
+            )
+            if "reasoning" in payload:
+                msg += " Use `reasoning_effort` instead of `reasoning`."
+            raise ValueError(msg)
         return False
 
     def _create_chat_result(
