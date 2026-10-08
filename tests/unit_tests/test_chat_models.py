@@ -241,7 +241,11 @@ def _sse(chunks: list[dict]) -> bytes:
 
 
 def _model_with_transport(
-    requests: list[httpx.Request], **kwargs: Any
+    requests: list[httpx.Request],
+    *,
+    completion: dict = COMPLETION_WITH_REASONING,
+    stream_chunks: list[dict] = STREAM_CHUNKS,
+    **kwargs: Any,
 ) -> ChatBitdeerAI:
     """Return a model whose HTTP calls are answered locally and recorded."""
 
@@ -250,10 +254,10 @@ def _model_with_transport(
         if json.loads(request.content).get("stream"):
             return httpx.Response(
                 200,
-                content=_sse(STREAM_CHUNKS),
+                content=_sse(stream_chunks),
                 headers={"content-type": "text/event-stream"},
             )
-        return httpx.Response(200, json=COMPLETION_WITH_REASONING)
+        return httpx.Response(200, json=completion)
 
     transport = httpx.MockTransport(handler)
     return ChatBitdeerAI(
@@ -415,3 +419,50 @@ def test_stream_usage_opt_out_request() -> None:
     llm = _model_with_transport(requests, stream_usage=False)
     list(llm.stream("hi"))
     assert "stream_options" not in json.loads(requests[0].content)
+
+
+TOOL_CALL_STREAM_CHUNKS = [
+    _chunk({"role": "assistant", "content": "", "reasoning_content": "Use the"}),
+    _chunk({"reasoning_content": " tool."}),
+    _chunk(
+        {
+            "tool_calls": [
+                {
+                    "index": 0,
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "magic_function", "arguments": ""},
+                }
+            ]
+        }
+    ),
+    _chunk({"tool_calls": [{"index": 0, "function": {"arguments": '{"input": '}}]}),
+    _chunk({"tool_calls": [{"index": 0, "function": {"arguments": "3}"}}]}),
+    _chunk({}, finish_reason="tool_calls"),
+    _chunk(None),
+]
+
+
+def test_stream_v1_reasoning_then_tool_call() -> None:
+    """In v1 output, a streamed tool call stays separate from the reasoning block."""
+    llm = _model_with_transport(
+        [], stream_chunks=TOOL_CALL_STREAM_CHUNKS, output_version="v1"
+    )
+    chunks = list(llm.stream("What is magic_function(3)?"))
+    full = chunks[0]
+    for chunk in chunks[1:]:
+        full += chunk
+
+    assert [block["type"] for block in full.content_blocks] == [
+        "reasoning",
+        "tool_call",
+    ]
+    assert {"type": "reasoning", "reasoning": "Use the tool."}.items() <= (
+        full.content_blocks[0].items()
+    )
+    assert {
+        "type": "tool_call",
+        "id": "call_1",
+        "name": "magic_function",
+        "args": {"input": 3},
+    }.items() <= full.content_blocks[1].items()

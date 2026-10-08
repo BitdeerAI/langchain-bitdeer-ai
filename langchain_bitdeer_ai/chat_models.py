@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import openai
 from langchain_core.language_models import LangSmithParams, ModelProfile
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
 from langchain_core.messages.ai import OutputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_core.utils import from_env, secret_from_env
@@ -409,6 +409,21 @@ class ChatBitdeerAI(BaseChatOpenAI):
             delta = choices[0].get("delta") or {}
             if reasoning_content := delta.get("reasoning_content"):
                 message.additional_kwargs["reasoning_content"] = reasoning_content
+        if (
+            self.output_version == "v1"
+            and isinstance(message, AIMessageChunk)
+            and message.tool_call_chunks
+        ):
+            # In v1 streaming, langchain-core numbers blocks that have no index,
+            # but tool-call blocks keep the API's tool-call index. A reasoning
+            # block and a tool call can then share index 0 and get merged into
+            # one block. Give tool calls their own index space, as upstream does
+            # for the Responses API.
+            blocks = message.content_blocks
+            for block in blocks:
+                if block["type"] == "tool_call_chunk" and "index" in block:
+                    block["index"] = f"lc_tc_{block['index']}"
+            message.content = cast("list[str | dict]", blocks)
         if usage := chunk.get("usage"):
             _add_reasoning_tokens(message, usage)
         return generation_chunk
