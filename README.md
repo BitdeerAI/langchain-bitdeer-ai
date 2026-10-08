@@ -4,25 +4,9 @@
 
 > **Status: under development.** Not yet published to PyPI.
 
-This guide gives a quick overview of getting started with Bitdeer AI
-[chat models](https://docs.langchain.com/oss/python/langchain/models) in LangChain.
-
-## Overview
-
-### Details
-
-| Class           | Package                | Serializable | JS support |
-| :-------------- | :--------------------- | :----------: | :--------: |
-| `ChatBitdeerAI` | `langchain-bitdeer-ai` |     beta     |     ❌     |
-
-### Features
-
-| [Tool calling](https://docs.langchain.com/oss/python/langchain/tools) | [Structured output](https://docs.langchain.com/oss/python/langchain/structured-output) | [Image input](https://docs.langchain.com/oss/python/langchain/messages#multimodal) | Audio input | Video input | [Token-level streaming](https://docs.langchain.com/oss/python/langchain/streaming) | Native async | [Token usage](https://docs.langchain.com/oss/python/langchain/models#token-usage) |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-
-Image input depends on the model. The [Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog)
-lists which models accept images.
+This package provides Bitdeer AI [chat models](https://docs.langchain.com/oss/python/langchain/models)
+(`ChatBitdeerAI`) and [embeddings](https://docs.langchain.com/oss/python/integrations/embeddings)
+(`BitdeerAIEmbeddings`) for LangChain. Setup is shared; the guides for each follow.
 
 ## Setup
 
@@ -41,7 +25,8 @@ if "BITDEER_API_KEY" not in os.environ:
     os.environ["BITDEER_API_KEY"] = getpass.getpass("Enter your Bitdeer AI API key: ")
 ```
 
-You can also pass it directly with `ChatBitdeerAI(api_key="...")`.
+You can also pass it directly, for example `ChatBitdeerAI(api_key="...")` or
+`BitdeerAIEmbeddings(api_key="...")`.
 
 To trace your model calls automatically, set your [LangSmith](https://docs.langchain.com/langsmith/observability)
 API key:
@@ -65,7 +50,36 @@ pip install -U langchain-bitdeer-ai
 uv add langchain-bitdeer-ai
 ```
 
-## Instantiation
+### Custom base URL
+
+| Argument   | Environment variable | Default                                |
+| ---------- | -------------------- | -------------------------------------- |
+| `api_key`  | `BITDEER_API_KEY`    | none (required)                        |
+| `base_url` | `BITDEER_API_BASE`   | `https://api-inference.bitdeer.ai/v1`  |
+
+`ChatBitdeerAI` and `BitdeerAIEmbeddings` read only these variables. They never fall back to
+`OPENAI_API_KEY` or `OPENAI_BASE_URL`, so an OpenAI key in your environment is never sent to Bitdeer AI.
+
+## Chat models
+
+### Overview
+
+#### Details
+
+| Class           | Package                | Serializable | JS support |
+| :-------------- | :--------------------- | :----------: | :--------: |
+| `ChatBitdeerAI` | `langchain-bitdeer-ai` |     beta     |     ❌     |
+
+#### Features
+
+| [Tool calling](https://docs.langchain.com/oss/python/langchain/tools) | [Structured output](https://docs.langchain.com/oss/python/langchain/structured-output) | [Image input](https://docs.langchain.com/oss/python/langchain/messages#multimodal) | Audio input | Video input | [Token-level streaming](https://docs.langchain.com/oss/python/langchain/streaming) | Native async | [Token usage](https://docs.langchain.com/oss/python/langchain/models#token-usage) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+Image input depends on the model. The [Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog)
+lists which models accept images.
+
+### Instantiation
 
 The `model` argument is required. Pass any chat model ID from the
 [Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog):
@@ -84,7 +98,7 @@ model = ChatBitdeerAI(
 
 These and other arguments work as they do in `langchain-openai`.
 
-## Invocation
+### Invocation
 
 ```python
 messages = [
@@ -105,7 +119,7 @@ for chunk in model.stream("Write a haiku about the sea."):
     print(chunk.text, end="")
 ```
 
-## Reasoning output
+### Reasoning output
 
 Bitdeer AI models return their reasoning along with the answer. `ChatBitdeerAI` keeps it in
 `additional_kwargs["reasoning_content"]` and in a standard `reasoning` content block:
@@ -131,23 +145,13 @@ corresponds to `reasoning={"effort": ...}` is `reasoning_effort`:
 model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", reasoning_effort="low")
 ```
 
-## Token usage
+### Token usage
 
 `response.usage_metadata` reports input, output and total tokens, and reasoning tokens under
 `output_token_details.reasoning`. Token usage is also reported when streaming. Pass `stream_usage=False`
 to turn it off.
 
-## Custom base URL
-
-| Argument   | Environment variable | Default                                |
-| ---------- | -------------------- | -------------------------------------- |
-| `api_key`  | `BITDEER_API_KEY`    | none (required)                        |
-| `base_url` | `BITDEER_API_BASE`   | `https://api-inference.bitdeer.ai/v1`  |
-
-`ChatBitdeerAI` reads only these variables. It never falls back to `OPENAI_API_KEY` or `OPENAI_BASE_URL`,
-so an OpenAI key in your environment is never sent to Bitdeer AI.
-
-## Known issues
+### Known issues
 
 - With `DeepSeek-V4.1-Flash`, forcing a tool call (as `with_structured_output` does by default) can return
   the tool call as plain text. Use `method="json_schema"` for structured output with this model:
@@ -169,6 +173,52 @@ so an OpenAI key in your environment is never sent to Bitdeer AI.
 - Structured output with `method="json_schema"` and JSON mode can print a Pydantic serializer warning
   about a `metadata` field (`PydanticSerializationUnexpectedValue`). The API returns `metadata` in a shape
   the `openai` SDK doesn't expect. The warning is harmless, and the output is correct.
+
+## Embeddings
+
+### Overview
+
+| Class                  | Package                | Serializable | JS support |
+| :--------------------- | :--------------------- | :----------: | :--------: |
+| `BitdeerAIEmbeddings`  | `langchain-bitdeer-ai` |      ❌      |     ❌     |
+
+`BitdeerAIEmbeddings` calls Bitdeer AI's OpenAI-compatible embeddings endpoint. It currently serves
+`BAAI/bge-m3`; see the [Bitdeer AI model catalog](https://developers.bitdeer.ai/docs/api/models-catalog)
+for the current list and pricing.
+
+### Instantiation
+
+The `model` argument is required:
+
+```python
+from langchain_bitdeer_ai import BitdeerAIEmbeddings
+
+embeddings = BitdeerAIEmbeddings(model="BAAI/bge-m3")
+```
+
+These and other arguments work as they do in `langchain-openai`, except the ones listed under
+[Limitations](#limitations).
+
+### Usage
+
+```python
+vector = embeddings.embed_query("The quick brown fox jumps over the lazy dog.")
+print(len(vector))
+
+vectors = embeddings.embed_documents(["Hello", "World"])
+print(len(vectors))
+```
+
+Async methods (`aembed_query`, `aembed_documents`) are available too. Use the embeddings with any LangChain
+vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)`.
+
+### Limitations
+
+- Texts are sent to the API as plain strings. Unlike `OpenAIEmbeddings`, nothing is tokenized with an
+  OpenAI tokenizer, so leave `check_embedding_ctx_length` at its default of `False`.
+- The endpoint ignores `dimensions`, so passing it raises a `ValueError`.
+- Input that is too long for the model is rejected by the API with a `400` error. Split long documents
+  before embedding them.
 
 ## Contributing
 
