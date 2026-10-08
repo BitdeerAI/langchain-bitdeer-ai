@@ -4,34 +4,95 @@
 
 > **Status: under development.** Not yet published to PyPI.
 
-## Installation
+This guide gives a quick overview of getting started with Bitdeer AI
+[chat models](https://docs.langchain.com/oss/python/langchain/models) in LangChain.
+
+## Overview
+
+### Details
+
+| Class           | Package                | Serializable | JS support |
+| :-------------- | :--------------------- | :----------: | :--------: |
+| `ChatBitdeerAI` | `langchain-bitdeer-ai` |     beta     |     ❌     |
+
+### Features
+
+| [Tool calling](https://docs.langchain.com/oss/python/langchain/tools) | [Structured output](https://docs.langchain.com/oss/python/langchain/structured-output) | [Image input](https://docs.langchain.com/oss/python/langchain/messages#multimodal) | Audio input | Video input | [Token-level streaming](https://docs.langchain.com/oss/python/langchain/streaming) | Native async | [Token usage](https://docs.langchain.com/oss/python/langchain/models#token-usage) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+Image input works with models that accept images.
+
+## Setup
+
+To access Bitdeer AI models, you need a Bitdeer AI account and an API key, and you need to install the
+`langchain-bitdeer-ai` integration package.
+
+### Credentials
+
+Get an API key from Bitdeer AI and set it as the `BITDEER_API_KEY` environment variable:
+
+```python
+import getpass
+import os
+
+if "BITDEER_API_KEY" not in os.environ:
+    os.environ["BITDEER_API_KEY"] = getpass.getpass("Enter your Bitdeer AI API key: ")
+```
+
+You can also pass it directly with `ChatBitdeerAI(api_key="...")`.
+
+To trace your model calls automatically, set your [LangSmith](https://docs.langchain.com/langsmith/observability)
+API key:
+
+```python
+os.environ["LANGSMITH_API_KEY"] = getpass.getpass("Enter your LangSmith API key: ")
+os.environ["LANGSMITH_TRACING"] = "true"
+```
+
+Runs show up in LangSmith under the `bitdeer_ai` provider.
+
+### Installation
+
+The LangChain Bitdeer AI integration lives in the `langchain-bitdeer-ai` package:
 
 ```bash
 pip install -U langchain-bitdeer-ai
 ```
 
-## Authentication
-
-Get an API key from Bitdeer AI and set it as an environment variable:
-
 ```bash
-export BITDEER_API_KEY="your-api-key"
+uv add langchain-bitdeer-ai
 ```
 
-You can also pass it directly with `ChatBitdeerAI(api_key="...")`.
+## Instantiation
 
-## Chat models
-
-`ChatBitdeerAI` gives you Bitdeer AI's chat models through LangChain's standard chat model interface.
-The `model` argument is required. Pass any chat model ID from the Bitdeer AI model catalog.
+The `model` argument is required. Pass any chat model ID from the Bitdeer AI model catalog:
 
 ```python
 from langchain_bitdeer_ai import ChatBitdeerAI
 
-model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash")
+model = ChatBitdeerAI(
+    model="zai-org/GLM-5.3-Flash",
+    temperature=0,
+    timeout=None,
+    max_tokens=1024,
+    max_retries=2,
+)
+```
 
-response = model.invoke("What is the capital of France?")
-print(response.content)
+These and other arguments work as they do in `langchain-openai`.
+
+## Invocation
+
+```python
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"},
+]
+response = model.invoke(messages)
+
+print(response.text)
+print(response.content_blocks)
 ```
 
 Streaming, async, batching, tool calling and structured output work as they do for any LangChain chat
@@ -42,7 +103,7 @@ for chunk in model.stream("Write a haiku about the sea."):
     print(chunk.text, end="")
 ```
 
-### Reasoning output
+## Reasoning output
 
 Bitdeer AI models return their reasoning along with the answer. `ChatBitdeerAI` keeps it in
 `additional_kwargs["reasoning_content"]` and in a standard `reasoning` content block:
@@ -68,13 +129,23 @@ corresponds to `reasoning={"effort": ...}` is `reasoning_effort`:
 model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", reasoning_effort="low")
 ```
 
-### Token usage
+## Token usage
 
 `response.usage_metadata` reports input, output and total tokens, and reasoning tokens under
 `output_token_details.reasoning`. Token usage is also reported when streaming. Pass `stream_usage=False`
 to turn it off.
 
-### Known issues
+## Custom base URL
+
+| Argument   | Environment variable | Default                                |
+| ---------- | -------------------- | -------------------------------------- |
+| `api_key`  | `BITDEER_API_KEY`    | none (required)                        |
+| `base_url` | `BITDEER_API_BASE`   | `https://api-inference.bitdeer.ai/v1`  |
+
+`ChatBitdeerAI` reads only these variables. It never falls back to `OPENAI_API_KEY` or `OPENAI_BASE_URL`,
+so an OpenAI key in your environment is never sent to Bitdeer AI.
+
+## Known issues
 
 - With `DeepSeek-V4.1-Flash`, forcing a tool call (as `with_structured_output` does by default) can return
   the tool call as plain text. Use `method="json_schema"` for structured output with this model:
@@ -96,20 +167,6 @@ to turn it off.
 - Structured output with `method="json_schema"` and JSON mode can print a Pydantic serializer warning
   about a `metadata` field (`PydanticSerializationUnexpectedValue`). The API returns `metadata` in a shape
   the `openai` SDK doesn't expect. The warning is harmless, and the output is correct.
-
-## Configuration
-
-| Argument   | Environment variable | Default                                |
-| ---------- | -------------------- | -------------------------------------- |
-| `api_key`  | `BITDEER_API_KEY`    | none (required)                        |
-| `base_url` | `BITDEER_API_BASE`   | `https://api-inference.bitdeer.ai/v1`  |
-
-`ChatBitdeerAI` reads only these variables. It never falls back to `OPENAI_API_KEY` or `OPENAI_BASE_URL`,
-so an OpenAI key in your environment is never sent to Bitdeer AI. Runs show up in LangSmith under the
-`bitdeer_ai` provider.
-
-Other arguments such as `temperature`, `max_tokens`, `timeout` and `max_retries` work as they do in
-`langchain-openai`.
 
 ## Contributing
 
