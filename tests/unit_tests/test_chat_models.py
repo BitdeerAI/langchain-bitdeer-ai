@@ -94,6 +94,16 @@ def test_openai_base_url_is_not_used(monkeypatch: pytest.MonkeyPatch, var: str) 
     assert str(llm.root_async_client.base_url) == f"{DEFAULT_API_BASE}/"
 
 
+def test_openai_org_and_project_are_not_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` do not become request headers."""
+    monkeypatch.setenv("OPENAI_ORG_ID", "org-openai")
+    monkeypatch.setenv("OPENAI_PROJECT_ID", "proj-openai")
+    requests: list[httpx.Request] = []
+    _model_with_transport(requests).invoke("hi")
+    assert "openai-organization" not in requests[0].headers
+    assert "openai-project" not in requests[0].headers
+
+
 def test_default_base_url() -> None:
     """Requests go to the Bitdeer AI endpoint by default."""
     llm = ChatBitdeerAI(model=MODEL_NAME, api_key=SecretStr("test"))

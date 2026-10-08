@@ -333,11 +333,16 @@ class ChatBitdeerAI(BaseChatOpenAI):
             self.root_client = openai.OpenAI(
                 **client_params, http_client=self.http_client
             )
+            # The `openai` client reads `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` itself
+            # and turns them into request headers, so clear them after construction.
+            self.root_client.organization = self.root_client.project = None
             self.client = self.root_client.chat.completions
         if not self.async_client:
             self.root_async_client = openai.AsyncOpenAI(
                 **client_params, http_client=self.http_async_client
             )
+            self.root_async_client.organization = None
+            self.root_async_client.project = None
             self.async_client = self.root_async_client.chat.completions
 
         if self.stream_usage is not False:
