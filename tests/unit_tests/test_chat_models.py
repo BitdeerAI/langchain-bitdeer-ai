@@ -496,6 +496,13 @@ def test_profile_comes_from_bundled_data(monkeypatch: pytest.MonkeyPatch) -> Non
     assert _PROFILES[MODEL_NAME]["max_input_tokens"] == limit
 
 
+def test_real_model_id_resolves_to_bundled_profile() -> None:
+    """A model ID that Bitdeer AI serves gets its bundled profile."""
+    model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", api_key=SecretStr("k"))
+    assert model.profile is not None
+    assert model.profile == _PROFILES["zai-org/GLM-5.3-Flash"]
+
+
 def test_bundled_profiles_use_known_keys() -> None:
     """Every bundled profile uses only keys defined by `ModelProfile`."""
     known = set(ModelProfile.__annotations__)
