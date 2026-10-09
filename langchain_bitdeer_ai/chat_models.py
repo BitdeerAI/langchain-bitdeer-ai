@@ -18,6 +18,7 @@ from pydantic import ConfigDict, Field, SecretStr, model_validator
 from typing_extensions import Self
 
 from langchain_bitdeer_ai._version import __version__
+from langchain_bitdeer_ai.data._profiles import _PROFILES
 
 DEFAULT_API_BASE = "https://api-inference.bitdeer.ai/v1"
 
@@ -350,9 +351,9 @@ class ChatBitdeerAI(BaseChatOpenAI):
         return self
 
     def _resolve_model_profile(self) -> ModelProfile | None:
-        # Profiles will come from models.dev; the base class would look the model
-        # up in OpenAI's profiles.
-        return None
+        # Overridden so the base class doesn't look the model up in OpenAI's profiles.
+        profile = _PROFILES.get(self.model_name)
+        return profile.copy() if profile else None
 
     def _use_responses_api(self, payload: dict) -> bool:
         # Always use Chat Completions. The base class would send some calls to the

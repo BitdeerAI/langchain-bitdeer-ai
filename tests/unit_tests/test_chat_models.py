@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 import pytest
+from langchain_core.language_models import ModelProfile
 from langchain_core.load import dumpd, dumps, load
 from langchain_core.messages import AIMessage, AIMessageChunk
 from openai.types.chat import ChatCompletion
@@ -14,6 +15,7 @@ from pydantic import SecretStr, ValidationError
 
 from langchain_bitdeer_ai import ChatBitdeerAI
 from langchain_bitdeer_ai.chat_models import DEFAULT_API_BASE
+from langchain_bitdeer_ai.data._profiles import _PROFILES
 
 MODEL_NAME = "zai-org/GLM-5.3-Flash"
 
@@ -476,3 +478,26 @@ def test_stream_v1_reasoning_then_tool_call() -> None:
         "name": "magic_function",
         "args": {"input": 3},
     }.items() <= full.content_blocks[1].items()
+
+
+def test_profile_is_none_for_unknown_model() -> None:
+    """A model with no bundled profile gets `None`, not OpenAI's profile."""
+    model = ChatBitdeerAI(model="not-a-real-model", api_key=SecretStr("k"))
+    assert model.profile is None
+
+
+def test_profile_comes_from_bundled_data(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The profile is a copy of the bundled entry, so edits don't leak back."""
+    limit = 1000
+    monkeypatch.setitem(_PROFILES, MODEL_NAME, {"max_input_tokens": limit})
+    model = ChatBitdeerAI(model=MODEL_NAME, api_key=SecretStr("k"))
+    assert model.profile == {"max_input_tokens": limit}
+    model.profile["max_input_tokens"] = 1  # type: ignore[index]
+    assert _PROFILES[MODEL_NAME]["max_input_tokens"] == limit
+
+
+def test_bundled_profiles_use_known_keys() -> None:
+    """Every bundled profile uses only keys defined by `ModelProfile`."""
+    known = set(ModelProfile.__annotations__)
+    for name, profile in _PROFILES.items():
+        assert set(profile) <= known, name
