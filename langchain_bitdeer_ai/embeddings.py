@@ -8,7 +8,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from pydantic import Field, SecretStr, model_validator
 from typing_extensions import Self
 
-from langchain_bitdeer_ai.chat_models import DEFAULT_API_BASE
+from langchain_bitdeer_ai.chat_models import DEFAULT_API_BASE, _proxied_http_clients
 
 
 class BitdeerAIEmbeddings(OpenAIEmbeddings):
@@ -135,6 +135,10 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
             )
             raise ValueError(msg)
 
+        http_client, http_async_client = _proxied_http_clients(
+            self.openai_proxy, self.http_client, self.http_async_client
+        )
+
         client_params: dict = {
             "api_key": self.bitdeer_ai_api_key.get_secret_value(),
             "base_url": self.bitdeer_ai_api_base,
@@ -146,12 +150,12 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
         # The `openai` client reads `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` itself
         # and turns them into request headers, so clear them after construction.
         if not self.client:
-            root_client = openai.OpenAI(**client_params, http_client=self.http_client)
+            root_client = openai.OpenAI(**client_params, http_client=http_client)
             root_client.organization = root_client.project = None
             self.client = root_client.embeddings
         if not self.async_client:
             root_async_client = openai.AsyncOpenAI(
-                **client_params, http_client=self.http_async_client
+                **client_params, http_client=http_async_client
             )
             root_async_client.organization = root_async_client.project = None
             self.async_client = root_async_client.embeddings
