@@ -16,6 +16,35 @@ layer over `langchain-openai`, because the Bitdeer AI API is OpenAI-compatible:
 Keep the code small. Override a base class method only when Bitdeer AI behaves differently from OpenAI, and
 explain the difference in a comment.
 
+Scope and conventions:
+
+- Chat models come first, then embeddings. LangChain discourages text-completion LLMs, document loaders and
+  similar components, so do not add them unless asked.
+- Build on existing LangChain building blocks (`langchain-openai`) instead of writing a client from scratch.
+  Be ready to explain what this package adds over the generic OpenAI-compatible route.
+- Follow the layout and test structure of existing partner packages (for example `langchain-deepseek`,
+  `langchain-xai`). Check one of them before inventing a convention.
+- Only list or default to models Bitdeer AI sells today. Check model IDs against the `/v1/models` endpoint
+  (needs an API key, returns IDs only) and take prices and context windows from another official Bitdeer AI
+  source, never from memory or old docs.
+- LangChain's APIs and contribution requirements change. When a decision depends on them (base classes,
+  standard-test properties, packaging or listing rules), check the current docs or source and cite what you
+  found.
+
+## Working style
+
+These bias toward caution over speed; for trivial tasks, use judgment.
+
+- **Think before coding.** State assumptions. If a request has several readings, lay them out instead of
+  picking silently. If something is unclear, ask.
+- **Simplicity first.** Write the minimum code that solves the problem: no unrequested features,
+  configurability, single-use abstractions, or error handling for impossible cases.
+- **Surgical changes.** Every changed line should trace back to the request. Do not reformat or refactor
+  adjacent code; match the existing style. Remove imports and code that your change orphaned, but only
+  mention pre-existing dead code.
+- **Goal-driven execution.** Turn tasks into verifiable goals ("fix the bug" becomes "write a test that
+  reproduces it, then make it pass"). For multi-step work, state a brief plan with a check per step.
+
 ## Commands
 
 Use `uv` and `make`. Do not use `pip`.
@@ -29,7 +58,8 @@ make test TEST_FILE=tests/unit_tests/test_chat_models.py
 make integration_tests  # live API, needs BITDEER_API_KEY
 ```
 
-Run `make format lint test` before you finish a change.
+Run `make format lint test` before you finish a change, and `make check_imports` (every module imports
+cleanly) before you commit. Commits that only touch Markdown can skip the checks.
 
 ## Invariants
 
@@ -52,7 +82,8 @@ These are easy to break by accident. Each one exists for a reason, so do not "si
 
 ## Naming
 
-- Display name: **Bitdeer AI**, never just "Bitdeer".
+- Display name: **Bitdeer AI**, never just "Bitdeer" (on its own that names the bitcoin-mining business).
+  If an upstream maintainer asks for a different spelling, ask the user before changing anything.
 - Hyphen form where hyphens are allowed (`langchain-bitdeer-ai`, `bitdeer-ai`), underscore form only where
   they are not (`langchain_bitdeer_ai`, `bitdeer_ai`). Never a bare `bitdeer` identifier.
 - Classes: `ChatBitdeerAI`, `BitdeerAIEmbeddings`. Environment variables: `BITDEER_API_KEY`,
@@ -90,6 +121,12 @@ examples, or "Known issues". Keep every README example runnable.
 
 - [Conventional Commits](https://www.conventionalcommits.org/): `feat(chat): ...`, `fix(embeddings): ...`,
   `test: ...`, `docs: ...`, `chore: ...`. Scopes in use: `chat`, `embeddings`.
-- Keep commit messages self-contained: explain the why in the message itself, with no issue, PR or MR
-  numbers and no links to non-public systems.
-- Never commit API keys, hostnames, IP addresses or other credentials, including in tests and examples.
+- Write an imperative summary line and a body that explains what changed and why. Keep messages
+  self-contained, with no issue, PR or MR numbers and no links to non-public systems.
+- History is linear: rebase instead of merging.
+- Everything committed is public, including commit messages. Never commit API keys, hostnames, IP addresses,
+  people's names, mentions of internal tooling or processes, or other credentials, including in tests and
+  examples.
+- Do not run integration tests unless asked.
+- Releases are tag-driven and published with PyPI Trusted Publishing. Never add a long-lived PyPI token, and
+  do not tag or publish unless asked.
