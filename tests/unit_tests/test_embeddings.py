@@ -200,6 +200,17 @@ def test_documents_are_sent_as_text() -> None:
     assert len(vectors) == 2  # noqa: PLR2004
 
 
+def test_documents_are_batched_by_default_chunk_size() -> None:
+    """The default `chunk_size` is 1000 texts per request."""
+    requests: list[httpx.Request] = []
+    embed = _embeddings_with_recorder(requests)
+    assert embed.chunk_size == 1000  # noqa: PLR2004
+    vectors = embed.embed_documents(["x"] * 1001)
+    sizes = [len(json.loads(r.content)["input"]) for r in requests]
+    assert sizes == [1000, 1]
+    assert len(vectors) == 1001  # noqa: PLR2004
+
+
 def test_query_is_sent_as_text() -> None:
     """A query reaches the endpoint as the original string."""
     requests: list[httpx.Request] = []

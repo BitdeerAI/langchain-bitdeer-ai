@@ -70,6 +70,9 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
         ```
 
     Input and output:
+        Each text can be at most 8192 tokens. The length is not checked before
+        sending, so longer input fails with an HTTP 400 from the API. `embed_documents`
+        sends `chunk_size` texts (default 1000) per request.
         Texts are sent to the API as they are. They are not tokenized with an
         OpenAI tokenizer, so leave `check_embedding_ctx_length` at `False`.
         The endpoint ignores `dimensions`, so passing it raises a `ValueError`.

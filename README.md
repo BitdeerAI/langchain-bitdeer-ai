@@ -217,8 +217,10 @@ vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)`.
 - Texts are sent to the API as plain strings. Unlike `OpenAIEmbeddings`, nothing is tokenized with an
   OpenAI tokenizer, so leave `check_embedding_ctx_length` at its default of `False`.
 - The endpoint ignores `dimensions`, so passing it raises a `ValueError`.
-- Input that is too long for the model is rejected by the API with a `400` error. Split long documents
-  before embedding them.
+- Each text can be at most 8192 tokens. Longer input is rejected by the API with a `400` error, and nothing
+  checks the length before sending. Split long documents before embedding them.
+- `embed_documents` sends texts in batches of `chunk_size` (default 1000) per request. Lower it if requests
+  are rejected for being too large.
 
 ## Contributing
 
