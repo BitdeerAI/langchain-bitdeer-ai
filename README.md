@@ -139,7 +139,7 @@ When you stream, each chunk carries its part of the reasoning, and adding the ch
 full text.
 
 `ChatBitdeerAI` uses the Chat Completions API. Parameters that only OpenAI's Responses API accepts, such as
-`reasoning`, `include` and `truncation`, raise a `ValueError`. The Chat Completions parameter that
+`reasoning`, `include` and `truncation`, raise a `ValueError`, and so does `use_responses_api=True`. The Chat Completions parameter that
 corresponds to `reasoning={"effort": ...}` is `reasoning_effort`:
 
 ```python

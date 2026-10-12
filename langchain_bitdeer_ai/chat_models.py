@@ -387,7 +387,14 @@ class ChatBitdeerAI(BaseChatOpenAI):
         # Responses API (for example when `reasoning` is set) but only for
         # `invoke`, not `stream`. Parameters that only the Responses API accepts
         # would make the `openai` client fail with an unclear `TypeError`, so
-        # reject them here, using upstream's own rule for what they are.
+        # reject them here, using upstream's own rule for what they are. An explicit
+        # `use_responses_api=True` is rejected too, so it is never silently ignored.
+        if self.use_responses_api:
+            msg = (
+                "ChatBitdeerAI uses the Chat Completions API and doesn't support "
+                "`use_responses_api=True`."
+            )
+            raise ValueError(msg)
         if _requires_responses_api(payload):
             names = [
                 f"`{name}`" for name in sorted(_RESPONSES_ONLY_PARAMS & payload.keys())

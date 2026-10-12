@@ -282,15 +282,26 @@ def _model_with_transport(
 
 
 def test_always_uses_chat_completions() -> None:
-    """`use_responses_api=True` still sends requests to Chat Completions."""
+    """Requests go to Chat Completions, also when `use_responses_api=False`."""
     requests: list[httpx.Request] = []
-    llm = _model_with_transport(requests, use_responses_api=True)
+    llm = _model_with_transport(requests, use_responses_api=False)
     llm.invoke("hi")
     list(llm.stream("hi"))
     assert [request.url.path for request in requests] == [
         "/v1/chat/completions",
         "/v1/chat/completions",
     ]
+
+
+def test_use_responses_api_true_is_rejected() -> None:
+    """`use_responses_api=True` raises for invoke and stream, and sends nothing."""
+    requests: list[httpx.Request] = []
+    llm = _model_with_transport(requests, use_responses_api=True)
+    with pytest.raises(ValueError, match="use_responses_api=True"):
+        llm.invoke("hi")
+    with pytest.raises(ValueError, match="use_responses_api=True"):
+        list(llm.stream("hi"))
+    assert requests == []
 
 
 REASONING = {"reasoning": {"effort": "low"}}
