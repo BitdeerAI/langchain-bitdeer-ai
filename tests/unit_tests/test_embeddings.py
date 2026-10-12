@@ -226,6 +226,16 @@ def test_dimensions_are_rejected() -> None:
         BitdeerAIEmbeddings(model=MODEL_NAME, api_key=SecretStr("test"), dimensions=256)
 
 
+def test_check_embedding_ctx_length_is_rejected() -> None:
+    """`check_embedding_ctx_length=True` raises, because it sends OpenAI token IDs."""
+    with pytest.raises(ValueError, match="check_embedding_ctx_length"):
+        BitdeerAIEmbeddings(
+            model=MODEL_NAME,
+            api_key=SecretStr("test"),
+            check_embedding_ctx_length=True,
+        )
+
+
 def _proxy_url(client: httpx.Client | httpx.AsyncClient) -> str | None:
     mounts = client._mounts
     transport = next((t for t in mounts.values() if t is not None), None)

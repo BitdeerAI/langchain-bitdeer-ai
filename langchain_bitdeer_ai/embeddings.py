@@ -74,7 +74,7 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
         sending, so longer input fails with an HTTP 400 from the API. `embed_documents`
         sends `chunk_size` texts (default 1000) per request.
         Texts are sent to the API as they are. They are not tokenized with an
-        OpenAI tokenizer, so leave `check_embedding_ctx_length` at `False`.
+        OpenAI tokenizer, so `check_embedding_ctx_length=True` raises a `ValueError`.
         The endpoint ignores `dimensions`, so passing it raises a `ValueError`.
     """
 
@@ -114,7 +114,7 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
     openai_api_version: str | None = None
 
     check_embedding_ctx_length: bool = False
-    """Send raw text instead of OpenAI `cl100k_base` token IDs."""
+    """Always `False`: raw text is sent, never OpenAI `cl100k_base` token IDs."""
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
@@ -125,6 +125,12 @@ class BitdeerAIEmbeddings(OpenAIEmbeddings):
         """
         if self.dimensions is not None:
             msg = "Bitdeer AI embeddings ignore `dimensions`, so it is not supported."
+            raise ValueError(msg)
+        if self.check_embedding_ctx_length:
+            msg = (
+                "`check_embedding_ctx_length` is not supported: it would send "
+                "OpenAI `cl100k_base` token IDs instead of text."
+            )
             raise ValueError(msg)
 
         # Without a key the `openai` client would read `OPENAI_API_KEY` instead.

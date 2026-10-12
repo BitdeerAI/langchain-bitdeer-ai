@@ -223,7 +223,7 @@ vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)`.
   `http_client` and `http_async_client` if you need them. `openai_proxy` works as in `langchain-openai`
   (it cannot be combined with `http_client`), but `OPENAI_PROXY` is not read.
 - Texts are sent to the API as plain strings. Unlike `OpenAIEmbeddings`, nothing is tokenized with an
-  OpenAI tokenizer, so leave `check_embedding_ctx_length` at its default of `False`.
+  OpenAI tokenizer, so `check_embedding_ctx_length=True` raises a `ValueError`.
 - The endpoint ignores `dimensions`, so passing it raises a `ValueError`.
 - Each text can be at most 8192 tokens. Longer input is rejected by the API with a `400` error, and nothing
   checks the length before sending. Split long documents before embedding them.
