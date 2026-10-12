@@ -96,8 +96,11 @@ model = ChatBitdeerAI(
 )
 ```
 
-These and other arguments work as they do in `langchain-openai`, except `http_socket_options`, which is
-not applied (see [Known issues](#known-issues)).
+These and other arguments work as they do in `langchain-openai`, with these exceptions:
+
+- `http_socket_options` is not applied (see [Known issues](#known-issues)).
+- `use_responses_api=True` raises `ValueError`, because Bitdeer AI supports Chat Completions only.
+- `organization` is not sent, and `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` are ignored.
 
 ### Invocation
 
@@ -222,6 +225,7 @@ vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)`.
 - `http_socket_options` and the TCP keepalive defaults of `langchain-openai` are not applied. Pass your own
   `http_client` and `http_async_client` if you need them. `openai_proxy` works as in `langchain-openai`
   (it cannot be combined with `http_client`), but `OPENAI_PROXY` is not read.
+- `openai_organization` is not sent, and `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` are ignored.
 - Texts are sent to the API as plain strings. Unlike `OpenAIEmbeddings`, nothing is tokenized with an
   OpenAI tokenizer, so `check_embedding_ctx_length=True` raises a `ValueError`.
 - The endpoint ignores `dimensions`, so passing it raises a `ValueError`.
