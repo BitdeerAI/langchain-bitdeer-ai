@@ -586,7 +586,7 @@ typing = [
 [package.metadata]
 requires-dist = [
     { name = "langchain-core", specifier = ">=1.6.7,<2.0.0" },
-    { name = "langchain-openai", specifier = ">=1.6.7,<2.0.0" },
+    { name = "langchain-openai", specifier = ">=1.6.7,<1.7.0" },
 ]
 
 [package.metadata.requires-dev]

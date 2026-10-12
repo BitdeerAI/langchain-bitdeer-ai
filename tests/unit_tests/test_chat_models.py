@@ -336,6 +336,23 @@ def test_responses_only_params_are_rejected(param: str, value: Any) -> None:
     assert requests == []
 
 
+def test_builtin_tool_is_rejected() -> None:
+    """OpenAI built-in tools raise an error and send nothing."""
+    requests: list[httpx.Request] = []
+    llm = _model_with_transport(requests).bind_tools([{"type": "web_search"}])
+    with pytest.raises(ValueError, match="OpenAI built-in tools"):
+        llm.invoke("hi")
+    assert requests == []
+
+
+def test_function_tool_is_not_rejected() -> None:
+    """Function tools still go to Chat Completions."""
+    requests: list[httpx.Request] = []
+    function = {"type": "function", "function": {"name": "f", "parameters": {}}}
+    _model_with_transport(requests).bind_tools([function]).invoke("hi")
+    assert requests[0].url.path == "/v1/chat/completions"
+
+
 def test_reasoning_effort_is_sent() -> None:
     """`reasoning_effort` is the Chat Completions parameter and reaches the API."""
     requests: list[httpx.Request] = []

@@ -11,9 +11,6 @@ from langchain_core.messages.ai import OutputTokenDetails, UsageMetadata
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_core.utils import from_env, secret_from_env
 from langchain_openai.chat_models.base import BaseChatOpenAI
-from langchain_openai.chat_models.base import (
-    _use_responses_api as _requires_responses_api,
-)
 from pydantic import ConfigDict, Field, SecretStr, model_validator
 from typing_extensions import Self
 
@@ -24,9 +21,8 @@ DEFAULT_API_BASE = "https://api-inference.bitdeer.ai/v1"
 
 _PROVIDER = "bitdeer_ai"
 
-# Named in the error message. Whether a request needs the Responses API is decided
-# by `langchain-openai`'s own rule (`_requires_responses_api`), which also covers
-# OpenAI built-in tools.
+# Parameters only the Responses API accepts. Kept local, in line with
+# `langchain-openai`'s rule, so no private upstream helper has to be imported.
 _RESPONSES_ONLY_PARAMS = {
     "context_management",
     "include",
@@ -35,6 +31,14 @@ _RESPONSES_ONLY_PARAMS = {
     "text",
     "truncation",
 }
+
+
+def _has_builtin_tool(payload: dict) -> bool:
+    """Return whether `payload` has an OpenAI built-in tool (any non-function tool)."""
+    return any(
+        "type" in tool and tool["type"] != "function"
+        for tool in payload.get("tools", [])
+    )
 
 
 def _proxied_http_clients(
@@ -387,7 +391,7 @@ class ChatBitdeerAI(BaseChatOpenAI):
         # Responses API (for example when `reasoning` is set) but only for
         # `invoke`, not `stream`. Parameters that only the Responses API accepts
         # would make the `openai` client fail with an unclear `TypeError`, so
-        # reject them here, using upstream's own rule for what they are. An explicit
+        # reject them here, along with OpenAI built-in tools. An explicit
         # `use_responses_api=True` is rejected too, so it is never silently ignored.
         if self.use_responses_api:
             msg = (
@@ -395,10 +399,10 @@ class ChatBitdeerAI(BaseChatOpenAI):
                 "`use_responses_api=True`."
             )
             raise ValueError(msg)
-        if _requires_responses_api(payload):
-            names = [
-                f"`{name}`" for name in sorted(_RESPONSES_ONLY_PARAMS & payload.keys())
-            ]
+        names = [
+            f"`{name}`" for name in sorted(_RESPONSES_ONLY_PARAMS & payload.keys())
+        ]
+        if names or _has_builtin_tool(payload):
             msg = (
                 "ChatBitdeerAI uses the Chat Completions API, which doesn't accept "
                 f"{', '.join(names) or 'OpenAI built-in tools'}."
