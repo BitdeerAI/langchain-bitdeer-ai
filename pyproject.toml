@@ -33,6 +33,18 @@ Repository = "https://github.com/BitdeerAI/langchain-bitdeer-ai"
 Issues = "https://github.com/BitdeerAI/langchain-bitdeer-ai/issues"
 Changelog = "https://github.com/BitdeerAI/langchain-bitdeer-ai/releases"
 
+# Allowlist rather than relying on .gitignore, so files that are kept out of git by other means
+# never end up in the source distribution. Patterns are gitignore-style, so anchor them with "/".
+[tool.hatch.build.targets.sdist]
+include = [
+    "/langchain_bitdeer_ai",
+    "/tests",
+    "/scripts",
+    "/Makefile",
+    "/README.md",
+    "/LICENSE",
+]
+
 [dependency-groups]
 test = [
     "pytest>=9.1.1,<10.0.0",
