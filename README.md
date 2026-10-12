@@ -96,7 +96,8 @@ model = ChatBitdeerAI(
 )
 ```
 
-These and other arguments work as they do in `langchain-openai`.
+These and other arguments work as they do in `langchain-openai`, except `http_socket_options`, which is
+not applied (see [Known issues](#known-issues)).
 
 ### Invocation
 
@@ -152,6 +153,10 @@ model = ChatBitdeerAI(model="zai-org/GLM-5.3-Flash", reasoning_effort="low")
 to turn it off.
 
 ### Known issues
+
+- `http_socket_options` and the TCP keepalive defaults of `langchain-openai` are not applied. Pass your own
+  `http_client` and `http_async_client` if you need them. `openai_proxy` works as in `langchain-openai`
+  (it cannot be combined with `http_client`), but `OPENAI_PROXY` is not read.
 
 - With `DeepSeek-V4.1-Flash`, forcing a tool call (as `with_structured_output` does by default) can return
   the tool call as plain text. Use `method="json_schema"` for structured output with this model:

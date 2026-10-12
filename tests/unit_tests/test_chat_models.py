@@ -508,3 +508,38 @@ def test_bundled_profiles_use_known_keys() -> None:
     known = set(ModelProfile.__annotations__)
     for name, profile in _PROFILES.items():
         assert set(profile) <= known, name
+
+
+def _proxy_url(client: httpx.Client | httpx.AsyncClient) -> str | None:
+    mounts = client._mounts
+    transport = next((t for t in mounts.values() if t is not None), None)
+    pool = getattr(transport, "_pool", None)
+    return str(pool._proxy_url) if pool is not None else None
+
+
+def test_openai_proxy_is_applied(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`openai_proxy` installs a proxy transport on both clients."""
+    monkeypatch.setenv("BITDEER_API_KEY", "env-key")
+    obj = ChatBitdeerAI(model=MODEL_NAME, openai_proxy="http://proxy.example:3128")
+    assert "proxy.example" in str(_proxy_url(obj.root_client._client))
+    assert "proxy.example" in str(_proxy_url(obj.root_async_client._client))
+
+
+def test_openai_proxy_conflicts_with_http_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A proxy cannot be combined with a caller-supplied client."""
+    monkeypatch.setenv("BITDEER_API_KEY", "env-key")
+    with pytest.raises(ValueError, match="openai_proxy"):
+        ChatBitdeerAI(
+            model=MODEL_NAME,
+            openai_proxy="http://proxy.example:3128",
+            http_client=httpx.Client(),
+        )
+
+
+def test_openai_proxy_env_is_not_used(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`OPENAI_PROXY` is not read."""
+    monkeypatch.setenv("BITDEER_API_KEY", "env-key")
+    monkeypatch.setenv("OPENAI_PROXY", "http://proxy.example:3128")
+    assert ChatBitdeerAI(model=MODEL_NAME).openai_proxy is None

@@ -37,6 +37,28 @@ _RESPONSES_ONLY_PARAMS = {
 }
 
 
+def _proxied_http_clients(
+    proxy: str | None, http_client: Any, http_async_client: Any
+) -> tuple[Any, Any]:
+    """Return the HTTP clients to use, building proxied ones when `proxy` is set.
+
+    Mirrors `langchain-openai`: a proxy cannot be combined with a client the caller
+    supplied, because that client already decides how requests are sent.
+    """
+    if not proxy:
+        return http_client, http_async_client
+    if http_client or http_async_client:
+        msg = (
+            "Cannot specify 'openai_proxy' if one of "
+            "'http_client'/'http_async_client' is already specified."
+        )
+        raise ValueError(msg)
+    return (
+        openai.DefaultHttpxClient(proxy=proxy),
+        openai.DefaultAsyncHttpxClient(proxy=proxy),
+    )
+
+
 def _get(obj: Any, key: str) -> Any:
     """Read `key` from a response dict or an `openai` response object."""
     if isinstance(obj, dict):
@@ -253,6 +275,9 @@ class ChatBitdeerAI(BaseChatOpenAI):
 
     openai_api_base: str | None = None
 
+    # Redeclared without the parent's `OPENAI_PROXY` lookup.
+    openai_proxy: str | None = None
+
     model_config = ConfigDict(populate_by_name=True)
 
     @property
@@ -320,6 +345,10 @@ class ChatBitdeerAI(BaseChatOpenAI):
             )
             raise ValueError(msg)
 
+        http_client, http_async_client = _proxied_http_clients(
+            self.openai_proxy, self.http_client, self.http_async_client
+        )
+
         client_params: dict = {
             "api_key": self.bitdeer_ai_api_key.get_secret_value(),
             "base_url": self.bitdeer_ai_api_base,
@@ -331,16 +360,14 @@ class ChatBitdeerAI(BaseChatOpenAI):
             client_params["max_retries"] = self.max_retries
 
         if not self.client:
-            self.root_client = openai.OpenAI(
-                **client_params, http_client=self.http_client
-            )
+            self.root_client = openai.OpenAI(**client_params, http_client=http_client)
             # The `openai` client reads `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` itself
             # and turns them into request headers, so clear them after construction.
             self.root_client.organization = self.root_client.project = None
             self.client = self.root_client.chat.completions
         if not self.async_client:
             self.root_async_client = openai.AsyncOpenAI(
-                **client_params, http_client=self.http_async_client
+                **client_params, http_client=http_async_client
             )
             self.root_async_client.organization = None
             self.root_async_client.project = None
