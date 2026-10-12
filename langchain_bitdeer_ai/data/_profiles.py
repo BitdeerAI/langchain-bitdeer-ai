@@ -41,7 +41,7 @@ _PROFILES: dict[str, ModelProfile] = {
         "image_url_inputs": True,
         "text_outputs": True,
         "reasoning_output": True,
-        "reasoning_effort_levels": ["low", "medium", "xhigh"],
+        "reasoning_effort_levels": ["none", "low", "medium", "xhigh"],
         "tool_calling": True,
         "tool_choice": True,
         "tool_call_streaming": True,
