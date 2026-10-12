@@ -23,7 +23,7 @@ class TestChatBitdeerAIStandard(ChatModelUnitTests):
     @property
     def chat_model_params(self) -> dict:
         """Parameters for constructing the chat model."""
-        return {"model": MODEL_NAME}
+        return {"model": MODEL_NAME, "api_key": "test"}
 
     @property
     def init_from_env_params(self) -> tuple[dict, dict, dict]:
