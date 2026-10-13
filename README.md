@@ -2,8 +2,6 @@
 
 [LangChain](https://www.langchain.com/) integration for [Bitdeer AI](https://www.bitdeer.ai).
 
-> **Status: under development.** Not yet published to PyPI.
-
 This package provides Bitdeer AI [chat models](https://docs.langchain.com/oss/python/langchain/models)
 (`ChatBitdeerAI`) and [embeddings](https://docs.langchain.com/oss/python/integrations/embeddings)
 (`BitdeerAIEmbeddings`) for LangChain. Setup is shared; the guides for each follow.
@@ -40,7 +38,8 @@ Runs show up in LangSmith under the `bitdeer_ai` provider.
 
 ### Installation
 
-The LangChain Bitdeer AI integration lives in the `langchain-bitdeer-ai` package:
+The LangChain Bitdeer AI integration lives in the `langchain-bitdeer-ai` package. It requires Python 3.10
+or later:
 
 ```bash
 pip install -U langchain-bitdeer-ai
@@ -218,7 +217,8 @@ print(len(vectors))
 ```
 
 Async methods (`aembed_query`, `aembed_documents`) are available too. Use the embeddings with any LangChain
-vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)`.
+vector store, for example `InMemoryVectorStore.from_texts(texts, embeddings)` (its similarity search needs
+`numpy`: `pip install numpy`).
 
 ### Limitations
 
