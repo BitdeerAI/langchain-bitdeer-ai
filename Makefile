@@ -1,4 +1,4 @@
-.PHONY: all format lint type test tests integration_tests help
+.PHONY: all format lint type test tests integration_tests release help
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -56,6 +56,13 @@ check_imports: $(shell find langchain_bitdeer_ai -name '*.py')
 	$(UV_RUN_LINT) python ./scripts/check_imports.py $^
 
 ######################
+# RELEASE
+######################
+
+release:
+	./scripts/release.sh
+
+######################
 # HELP
 ######################
 
@@ -69,3 +76,4 @@ help:
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
 	@echo 'integration_tests            - run integration tests (needs BITDEER_API_KEY)'
+	@echo 'release                      - check, build and publish the tagged version (needs UV_PUBLISH_TOKEN)'

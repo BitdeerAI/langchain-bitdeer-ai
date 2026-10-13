@@ -56,10 +56,12 @@ make lint               # import checks, ruff, mypy
 make test               # unit tests, network disabled
 make test TEST_FILE=tests/unit_tests/test_chat_models.py
 make integration_tests  # live API, needs BITDEER_API_KEY
+make release            # checks, builds and publishes the tagged version, needs UV_PUBLISH_TOKEN
 ```
 
-Run `make format lint test` before you finish a change, and `make check_imports` (every module imports
-cleanly) before you commit. Commits that only touch Markdown can skip the checks.
+There is no CI, so these checks are the only gate: always run `make format lint test` before you finish a
+change, and `make check_imports` (every module imports cleanly) before you commit. Commits that only touch
+Markdown can skip the checks.
 
 ## Invariants
 
@@ -128,5 +130,7 @@ examples, or "Known issues". Keep every README example runnable.
   people's names, mentions of internal tooling or processes, or other credentials, including in tests and
   examples.
 - Do not run integration tests unless asked.
-- Releases are tag-driven and published with PyPI Trusted Publishing. Never add a long-lived PyPI token, and
-  do not tag or publish unless asked.
+- Releases go through `make release` only, never a bare `uv publish`: it runs every check on all supported
+  Python versions, builds, smoke-tests the wheel and sdist, and publishes only if all of that passes. The
+  PyPI token is passed in through `UV_PUBLISH_TOKEN` for that one command; never write it to a file. Do not
+  tag or publish unless asked.
