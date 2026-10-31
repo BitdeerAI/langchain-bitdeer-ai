@@ -453,6 +453,54 @@ async def test_astream_reasoning_and_usage() -> None:
     assert json.loads(requests[0].content)["stream_options"] == {"include_usage": True}
 
 
+# Some models (for example Nemotron) send reasoning as `reasoning` instead of
+# `reasoning_content`.
+def test_invoke_reasoning_field() -> None:
+    """A `reasoning` field is exposed as `reasoning_content`."""
+    completion = _completion(
+        {"role": "assistant", "content": "5", "reasoning": "2+3=5"}
+    )
+    message = _model_with_transport([], completion=completion).invoke("What is 2 + 3?")
+    assert message.additional_kwargs["reasoning_content"] == "2+3=5"
+    assert {"type": "reasoning", "reasoning": "2+3=5"}.items() <= next(
+        block for block in message.content_blocks if block["type"] == "reasoning"
+    ).items()
+
+
+def test_stream_reasoning_field() -> None:
+    """Streamed `reasoning` deltas are exposed as `reasoning_content`."""
+    stream_chunks = [
+        _chunk({"role": "assistant", "content": "", "reasoning": "2+3"}),
+        _chunk({"reasoning": "=5"}),
+        *STREAM_CHUNKS[2:],
+    ]
+    llm = _model_with_transport([], stream_chunks=stream_chunks)
+    _check_stream(list(llm.stream("What is 2 + 3?")))
+
+
+def test_reasoning_content_wins_over_reasoning() -> None:
+    """With both fields present, `reasoning_content` is kept."""
+    completion = _completion(
+        {
+            "role": "assistant",
+            "content": "5",
+            "reasoning_content": "a",
+            "reasoning": "b",
+        }
+    )
+    message = _model_with_transport([], completion=completion).invoke("hi")
+    assert message.additional_kwargs["reasoning_content"] == "a"
+
+
+def test_non_string_reasoning_is_ignored() -> None:
+    """A `reasoning` value that is not a string is not treated as reasoning text."""
+    completion = _completion(
+        {"role": "assistant", "content": "5", "reasoning": {"effort": "low"}}
+    )
+    message = _model_with_transport([], completion=completion).invoke("hi")
+    assert "reasoning_content" not in message.additional_kwargs
+
+
 def test_stream_usage_opt_out_request() -> None:
     """With `stream_usage=False` the request does not ask for usage."""
     requests: list[httpx.Request] = []

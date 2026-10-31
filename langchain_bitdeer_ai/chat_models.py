@@ -72,6 +72,19 @@ def _get(obj: Any, key: str) -> Any:
     return getattr(obj, key, None)
 
 
+def _reasoning_text(message: Any) -> Any:
+    """Return the reasoning text of a response message or stream delta.
+
+    Most Bitdeer AI models send it as `reasoning_content`; some (for example
+    Nemotron) send it as `reasoning` instead. Only a string counts, because
+    `reasoning` is also the name of a structured field in OpenAI's vocabulary.
+    """
+    if reasoning_content := _get(message, "reasoning_content"):
+        return reasoning_content
+    reasoning = _get(message, "reasoning")
+    return reasoning if isinstance(reasoning, str) else None
+
+
 def _add_reasoning_tokens(message: BaseMessage, usage: Any) -> None:
     """Record Bitdeer AI's top-level `usage.reasoning_tokens` in usage metadata.
 
@@ -426,7 +439,7 @@ class ChatBitdeerAI(BaseChatOpenAI):
         for generation, choice in zip(rtn.generations, choices, strict=False):
             message = generation.message
             message.response_metadata["model_provider"] = _PROVIDER
-            if reasoning_content := _get(_get(choice, "message"), "reasoning_content"):
+            if reasoning_content := _reasoning_text(_get(choice, "message")):
                 message.additional_kwargs["reasoning_content"] = reasoning_content
             if usage is not None:
                 _add_reasoning_tokens(message, usage)
@@ -451,7 +464,7 @@ class ChatBitdeerAI(BaseChatOpenAI):
         message.response_metadata["model_provider"] = _PROVIDER
         if choices := chunk.get("choices"):
             delta = choices[0].get("delta") or {}
-            if reasoning_content := delta.get("reasoning_content"):
+            if reasoning_content := _reasoning_text(delta):
                 message.additional_kwargs["reasoning_content"] = reasoning_content
         if (
             self.output_version == "v1"
