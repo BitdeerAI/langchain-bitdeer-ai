@@ -68,21 +68,24 @@ def _get(obj: Any, key: str) -> Any:
     if isinstance(obj, dict):
         return obj.get(key)
     # Fields Bitdeer AI adds beyond OpenAI's schema (`reasoning_content`,
-    # `usage.reasoning_tokens`) are kept as extras, which `getattr` reads.
+    # `reasoning`, `usage.reasoning_tokens`) are kept as extras, which `getattr`
+    # reads.
     return getattr(obj, key, None)
 
 
-def _reasoning_text(message: Any) -> Any:
+def _reasoning_text(message: Any) -> str | None:
     """Return the reasoning text of a response message or stream delta.
 
     Most Bitdeer AI models send it as `reasoning_content`; some (for example
-    Nemotron) send it as `reasoning` instead. Only a string counts, because
-    `reasoning` is also the name of a structured field in OpenAI's vocabulary.
+    Nemotron) send it as `reasoning` instead. Only a non-empty string counts,
+    because `reasoning` is also the name of a structured field in OpenAI's
+    vocabulary.
     """
-    if reasoning_content := _get(message, "reasoning_content"):
-        return reasoning_content
-    reasoning = _get(message, "reasoning")
-    return reasoning if isinstance(reasoning, str) else None
+    for key in ("reasoning_content", "reasoning"):
+        value = _get(message, key)
+        if isinstance(value, str) and value:
+            return value
+    return None
 
 
 def _add_reasoning_tokens(message: BaseMessage, usage: Any) -> None:

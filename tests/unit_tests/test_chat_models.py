@@ -397,7 +397,8 @@ NESTED_REASONING_TOKENS = {"completion_tokens_details": {"reasoning_tokens": 19}
 @pytest.mark.parametrize(
     "usage",
     [
-        {**USAGE, **NESTED_REASONING_TOKENS},
+        # A different top-level count shows which one wins.
+        {**USAGE, "reasoning_tokens": 7, **NESTED_REASONING_TOKENS},
         {
             **{k: v for k, v in USAGE.items() if k != "reasoning_tokens"},
             **NESTED_REASONING_TOKENS,
@@ -406,7 +407,7 @@ NESTED_REASONING_TOKENS = {"completion_tokens_details": {"reasoning_tokens": 19}
     ids=["both", "nested_only"],
 )
 def test_reasoning_tokens_counted_once(usage: dict) -> None:
-    """The nested count is used as is, and is not added to the top-level one."""
+    """The nested count wins, and is not added to the top-level one."""
     llm = ChatBitdeerAI(model=MODEL_NAME, api_key=SecretStr("test"))
     response = ChatCompletion.model_validate(
         {**COMPLETION_WITH_REASONING, "usage": usage}
