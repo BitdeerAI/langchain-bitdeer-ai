@@ -16,20 +16,18 @@ from langchain_bitdeer_ai import ChatBitdeerAI
 # The standard tests cover `zai-org/GLM-5.3-Flash` in depth; these run a smaller
 # set of scenarios on every chat model.
 MODELS = [
-    "deepseek-ai/DeepSeek-V4.1-Flash",
-    "deepseek-ai/DeepSeek-V4-Flash",
+    "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B",
     "zai-org/GLM-5.3",
     "zai-org/GLM-5.3-Flash",
     "Qwen/Qwen3.8-27B",
 ]
 IMAGE_MODELS = [
-    "deepseek-ai/DeepSeek-V4.1-Flash",
+    "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B",
     "zai-org/GLM-5.3-Flash",
     "Qwen/Qwen3.8-27B",
 ]
-# With a forced `tool_choice`, this model returns the call as plain text in
-# `content` instead of `tool_calls`.
-FORCED_TOOL_BROKEN = "deepseek-ai/DeepSeek-V4.1-Flash"
 
 PROMPT = "What is 2 + 3? Answer with the number only."
 
@@ -40,20 +38,6 @@ def _model(name: str, **kwargs: Any) -> ChatBitdeerAI:
     return ChatBitdeerAI(
         model=name, max_tokens=2048, rate_limiter=rate_limiter, **kwargs
     )
-
-
-def _skip_forced_tool_broken(models: list[str]) -> list[object]:
-    return [
-        pytest.param(
-            m,
-            marks=pytest.mark.skip(
-                reason="forced tool calls are returned as plain text"
-            ),
-        )
-        if m == FORCED_TOOL_BROKEN
-        else m
-        for m in models
-    ]
 
 
 def _solid_png(rgb: tuple[int, int, int], size: int = 32) -> str:
@@ -123,7 +107,7 @@ def test_tool_calling(model_name: str) -> None:
     assert "city" in result.tool_calls[0]["args"]
 
 
-@pytest.mark.parametrize("model_name", _skip_forced_tool_broken(MODELS))
+@pytest.mark.parametrize("model_name", MODELS)
 def test_forced_tool_choice(model_name: str) -> None:
     """`tool_choice` forces a tool call."""
     llm = _model(model_name).bind_tools([get_weather], tool_choice="get_weather")
@@ -132,7 +116,7 @@ def test_forced_tool_choice(model_name: str) -> None:
     assert result.tool_calls[0]["name"] == "get_weather"
 
 
-@pytest.mark.parametrize("model_name", _skip_forced_tool_broken(MODELS))
+@pytest.mark.parametrize("model_name", MODELS)
 def test_structured_output_function_calling(model_name: str) -> None:
     """`with_structured_output` works through forced tool calling (the default)."""
     llm = _model(model_name).with_structured_output(Person)
