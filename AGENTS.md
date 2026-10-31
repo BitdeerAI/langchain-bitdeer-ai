@@ -24,9 +24,11 @@ Scope and conventions:
   Be ready to explain what this package adds over the generic OpenAI-compatible route.
 - Follow the layout and test structure of existing partner packages (for example `langchain-deepseek`,
   `langchain-xai`). Check one of them before inventing a convention.
-- Only list or default to models Bitdeer AI sells today. Check model IDs against the `/v1/models` endpoint
-  (needs an API key, returns IDs only) and take prices and context windows from another official Bitdeer AI
-  source, never from memory or old docs.
+- Only list or default to models Bitdeer AI sells today. Take the model list from the public `ListModels`
+  endpoint (`POST https://www.bitdeer.ai/api/model/v1/ListModels`, no key needed). It returns model IDs,
+  tags (such as `text-to-text`, `image-to-text`, `embeddings`), prices and descriptions. Don't use the API's
+  `/v1/models` for this: it returns IDs only and can be out of date. `ListModels` has no token limits, so
+  take context windows from another official Bitdeer AI source, never from memory or old docs.
 - LangChain's APIs and contribution requirements change. When a decision depends on them (base classes,
   standard-test properties, packaging or listing rules), check the current docs or source and cite what you
   found.
@@ -79,7 +81,7 @@ These are easy to break by accident. Each one exists for a reason, so do not "si
 - **Provider name is `bitdeer_ai`** in `ls_provider` and `response_metadata["model_provider"]`.
 - **Reasoning output** goes to `additional_kwargs["reasoning_content"]`, and reasoning tokens go to
   `usage_metadata["output_token_details"]["reasoning"]`, both for `invoke` and for `stream`.
-- **Model profiles** are keyed by the model ID that `/v1/models` returns. Take values only from official
+- **Model profiles** are keyed by the model ID that `ListModels` returns (`modelKey`). Take values only from official
   Bitdeer AI sources, and leave a key out when it is not known. Do not guess.
 
 ## Naming
