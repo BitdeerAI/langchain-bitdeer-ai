@@ -89,9 +89,10 @@ def _add_reasoning_tokens(message: BaseMessage, usage: Any) -> None:
     """Record Bitdeer AI's top-level `usage.reasoning_tokens` in usage metadata.
 
     OpenAI nests the count in `completion_tokens_details`, which is what the base
-    class reads. Bitdeer AI reports it at the top level of `usage`, and counts it
-    in `completion_tokens`, so `output_tokens` needs no adjustment. A count the
-    base class already set is left untouched.
+    class reads. Bitdeer AI reports it there and at the top level of `usage`, or
+    in only one of the two, and counts it in `completion_tokens`, so
+    `output_tokens` needs no adjustment. The top-level count is a fallback: a
+    count the base class already set is left untouched.
     """
     if not isinstance(message, AIMessage) or message.usage_metadata is None:
         return

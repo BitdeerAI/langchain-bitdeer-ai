@@ -391,6 +391,33 @@ def test_create_chat_result_from_dict() -> None:
     assert message.response_metadata["model_provider"] == "bitdeer_ai"
 
 
+NESTED_REASONING_TOKENS = {"completion_tokens_details": {"reasoning_tokens": 19}}
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        {**USAGE, **NESTED_REASONING_TOKENS},
+        {
+            **{k: v for k, v in USAGE.items() if k != "reasoning_tokens"},
+            **NESTED_REASONING_TOKENS,
+        },
+    ],
+    ids=["both", "nested_only"],
+)
+def test_reasoning_tokens_counted_once(usage: dict) -> None:
+    """The nested count is used as is, and is not added to the top-level one."""
+    llm = ChatBitdeerAI(model=MODEL_NAME, api_key=SecretStr("test"))
+    response = ChatCompletion.model_validate(
+        {**COMPLETION_WITH_REASONING, "usage": usage}
+    )
+    message = llm._create_chat_result(response).generations[0].message
+    assert isinstance(message, AIMessage)
+    assert message.usage_metadata is not None
+    assert message.usage_metadata["output_tokens"] == USAGE["completion_tokens"]
+    assert message.usage_metadata["output_token_details"] == {"reasoning": 19}
+
+
 def test_create_chat_result_without_reasoning() -> None:
     """Without `reasoning_content` there is no reasoning key or block."""
     llm = ChatBitdeerAI(model=MODEL_NAME, api_key=SecretStr("test"))
