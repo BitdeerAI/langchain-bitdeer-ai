@@ -81,8 +81,8 @@ These are easy to break by accident. Each one exists for a reason, so do not "si
 - **Provider name is `bitdeer_ai`** in `ls_provider` and `response_metadata["model_provider"]`.
 - **Reasoning output** goes to `additional_kwargs["reasoning_content"]`, and reasoning tokens go to
   `usage_metadata["output_token_details"]["reasoning"]`, both for `invoke` and for `stream`.
-- **Model profiles** are keyed by the model ID that `ListModels` returns (`modelKey`). Take values only from official
-  Bitdeer AI sources, and leave a key out when it is not known. Do not guess.
+- **Model profiles** are keyed by the model ID that API requests use, which is `modelKey` in `ListModels`.
+  Take values only from official Bitdeer AI sources, and leave a key out when it is not known. Do not guess.
 
 ## Naming
 
