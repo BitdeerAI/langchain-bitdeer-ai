@@ -160,23 +160,6 @@ to turn it off.
   `http_client` and `http_async_client` if you need them. `openai_proxy` works as in `langchain-openai`
   (it cannot be combined with `http_client`), but `OPENAI_PROXY` is not read.
 
-- With `DeepSeek-V4.1-Flash`, forcing a tool call (as `with_structured_output` does by default) can return
-  the tool call as plain text. Use `method="json_schema"` for structured output with this model:
-
-  ```python
-  from pydantic import BaseModel
-
-
-  class Person(BaseModel):
-      name: str
-      age: int
-
-
-  model = ChatBitdeerAI(model="deepseek-ai/DeepSeek-V4.1-Flash")
-  structured_model = model.with_structured_output(Person, method="json_schema")
-  structured_model.invoke("Ada is 36 years old.")
-  ```
-
 - Structured output with `method="json_schema"` and JSON mode can print a Pydantic serializer warning
   about a `metadata` field (`PydanticSerializationUnexpectedValue`). The API returns `metadata` in a shape
   the `openai` SDK doesn't expect. The warning is harmless, and the output is correct.
